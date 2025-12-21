@@ -109,7 +109,8 @@ public class SecurityConfig {
         configuration
                 .setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:3001", "http://localhost:5173",
                         "http://127.0.0.1:3000", "http://127.0.0.1:3001", "http://192.168.1.138:3001",
-                        "https://alphaqi.vercel.app", "https://admin-alphaqi.vercel.app"));
+                        "https://alphaqi.vercel.app", "https://admin-alphaqi.vercel.app",
+                        "https://admin-alphaqi.vercel.app"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
