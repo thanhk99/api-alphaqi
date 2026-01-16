@@ -12,6 +12,8 @@ import course.model.Course;
 import course.repository.CourseRepository;
 import course.repository.EnrollmentRepository;
 import course.repository.LessonRepository;
+import course.repository.CategoryRepository;
+import course.model.Category;
 import course.model.Enrollment;
 
 import org.springframework.stereotype.Service;
@@ -33,15 +35,18 @@ public class CourseService {
     private final CourseRepository courseRepository;
     private final EnrollmentRepository enrollmentRepository;
     private final LessonRepository lessonRepository;
+    private final CategoryRepository categoryRepository;
     private final CloudinaryService cloudinaryService;
 
     public CourseService(CourseRepository courseRepository,
             EnrollmentRepository enrollmentRepository,
             LessonRepository lessonRepository,
+            CategoryRepository categoryRepository,
             CloudinaryService cloudinaryService) {
         this.courseRepository = courseRepository;
         this.enrollmentRepository = enrollmentRepository;
         this.lessonRepository = lessonRepository;
+        this.categoryRepository = categoryRepository;
         this.cloudinaryService = cloudinaryService;
     }
 
@@ -220,10 +225,6 @@ public class CourseService {
 
     private CourseResponse mapToResponse(Course course, Set<String> enrolledCourseIds) {
         boolean isEnrolled = enrolledCourseIds.contains(course.getId());
-
-        // Fetch instructor details if instructorId is present
-
-        // Use repository queries instead of loading collections
         int enrollmentCount = enrollmentRepository.countByCourseId(course.getId()).intValue();
 
         CourseResponse.CourseResponseBuilder builder = CourseResponse.builder()
@@ -235,6 +236,9 @@ public class CourseService {
                 .thumbnail(course.getThumbnail())
                 .introVideoUrl(course.getIntroVideoUrl())
                 .category(course.getCategory())
+                .categoryName(course.getCategory() != null
+                        ? categoryRepository.findByCode(course.getCategory()).map(Category::getName).orElse(null)
+                        : null)
                 .isPublished(course.getIsPublished())
                 .isShowHome(course.getIsShowHome())
                 .averageRating(course.getAverageRating())

@@ -53,6 +53,7 @@ public class AdminEnrollmentResponse {
         private String id;
         private String title;
         private String category;
+        private String categoryName;
 
     }
 }

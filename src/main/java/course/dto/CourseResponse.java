@@ -24,6 +24,7 @@ public class CourseResponse {
     private BigDecimal price;
     private String thumbnail;
     private String category;
+    private String categoryName;
     private Boolean isPublished;
     private Boolean isShowHome;
     private String introVideoUrl;

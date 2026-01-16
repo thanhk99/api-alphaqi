@@ -9,6 +9,8 @@ import course.exception.BadRequestException;
 import course.exception.ResourceNotFoundException;
 import course.repository.CourseRepository;
 import course.repository.EnrollmentRepository;
+import course.repository.CategoryRepository;
+import course.model.Category;
 
 import course.repository.UserRepository;
 import course.model.Course;
@@ -28,13 +30,16 @@ public class EnrollmentService {
     private final EnrollmentRepository enrollmentRepository;
     private final CourseRepository courseRepository;
     private final UserRepository userRepository;
+    private final CategoryRepository categoryRepository;
 
     public EnrollmentService(EnrollmentRepository enrollmentRepository,
             CourseRepository courseRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            CategoryRepository categoryRepository) {
         this.enrollmentRepository = enrollmentRepository;
         this.courseRepository = courseRepository;
         this.userRepository = userRepository;
+        this.categoryRepository = categoryRepository;
     }
 
     @Transactional
@@ -88,6 +93,9 @@ public class EnrollmentService {
                 .price(course.getPrice())
                 .thumbnail(course.getThumbnail())
                 .category(course.getCategory())
+                .categoryName(course.getCategory() != null
+                        ? categoryRepository.findByCode(course.getCategory()).map(Category::getName).orElse(null)
+                        : null)
                 .build();
 
         return EnrollmentResponse.builder()
@@ -203,6 +211,9 @@ public class EnrollmentService {
                 .id(courseEntity.getId())
                 .title(courseEntity.getTitle())
                 .category(courseEntity.getCategory())
+                .categoryName(courseEntity.getCategory() != null
+                        ? categoryRepository.findByCode(courseEntity.getCategory()).map(Category::getName).orElse(null)
+                        : null)
                 .build();
 
         return AdminEnrollmentResponse.builder()

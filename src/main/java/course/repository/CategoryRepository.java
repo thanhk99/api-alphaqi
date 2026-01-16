@@ -11,4 +11,6 @@ public interface CategoryRepository extends JpaRepository<Category, String> {
     boolean existsByCode(String code);
 
     java.util.List<Category> findAllByDeletedAtIsNull();
+
+    java.util.Optional<Category> findByCode(String code);
 }

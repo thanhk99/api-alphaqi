@@ -41,6 +41,7 @@ public class EnrollmentResponse {
         private BigDecimal price;
         private String thumbnail;
         private String category;
+        private String categoryName;
         private Double averageRating;
         private Integer reviewCount;
         private Integer lessonCount;
