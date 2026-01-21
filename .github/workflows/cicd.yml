@@ -1,4 +1,4 @@
-name: SpringBoot CI/CD (No Docker - DEBUG)
+name: SpringBoot CI/CD
 
 on:
   push:
