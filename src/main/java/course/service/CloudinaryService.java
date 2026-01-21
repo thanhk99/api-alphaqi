@@ -67,6 +67,32 @@ public class CloudinaryService {
         }
     }
 
+    public UploadResponse upload(MultipartFile file, String folder) {
+        if (file.isEmpty()) {
+            throw new BadRequestException("File is empty");
+        }
+
+        try {
+            Map<String, Object> uploadParams = ObjectUtils.asMap(
+                    "resource_type", "auto",
+                    "folder", folder,
+                    "overwrite", true);
+
+            Map uploadResult = cloudinary.uploader().upload(file.getBytes(), uploadParams);
+
+            return UploadResponse.builder()
+                    .url((String) uploadResult.get("secure_url"))
+                    .publicId((String) uploadResult.get("public_id"))
+                    .format((String) uploadResult.get("format"))
+                    .bytes(((Number) uploadResult.get("bytes")).longValue())
+                    .build();
+
+        } catch (IOException e) {
+            log.error("Error uploading file to Cloudinary", e);
+            throw new BadRequestException("Failed to upload file: " + e.getMessage());
+        }
+    }
+
     public UploadResponse uploadImage(MultipartFile file) {
         // Validate file
         if (file.isEmpty()) {

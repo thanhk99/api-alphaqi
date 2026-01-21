@@ -72,7 +72,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/categories", "/categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/news", "/news/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/articles", "/articles/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/reviews/**", "/expert-reviews/**", "/partner-companies/**")
+                        .requestMatchers(HttpMethod.GET, "/reviews/**", "/expert-reviews/**", "/partner-companies/**",
+                                "/reports", "/reports/**", "/chart-items", "/chart-items/**")
                         .permitAll()
                         .requestMatchers(HttpMethod.GET, "/avatars/**").permitAll()
                         // Public admin registration
