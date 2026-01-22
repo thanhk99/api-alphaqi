@@ -50,7 +50,7 @@ jobs:
           username: root
           key: ${{ secrets.SSH_KEY }}
           source: "target/app.jar"
-          target: "/opt/api-alphaqi/app.jar"
+          target: "/opt/api-alphaqi/"
           overwrite: true
   
       # 6. Kiểm tra file trên server
