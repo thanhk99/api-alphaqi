@@ -54,7 +54,7 @@ public class ReportService {
         String pdfUrl = request.getPdfUrl();
 
         if (file != null && !file.isEmpty()) {
-            UploadResponse uploadResult = cloudinaryService.upload(file, "reports");
+            UploadResponse uploadResult = cloudinaryService.uploadPDF(file, "reports");
             pdfUrl = uploadResult.getUrl();
         }
 
@@ -76,7 +76,7 @@ public class ReportService {
 
         String pdfUrl = request.getPdfUrl();
         if (file != null && !file.isEmpty()) {
-            UploadResponse uploadResult = cloudinaryService.upload(file, "reports");
+            UploadResponse uploadResult = cloudinaryService.uploadPDF(file, "reports");
             pdfUrl = uploadResult.getUrl();
         }
 

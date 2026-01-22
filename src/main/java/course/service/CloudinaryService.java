@@ -93,6 +93,42 @@ public class CloudinaryService {
         }
     }
 
+    public UploadResponse uploadPDF(MultipartFile file, String folder) {
+        if (file.isEmpty()) {
+            throw new BadRequestException("File is empty");
+        }
+
+        // Validate PDF format
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename == null || !originalFilename.toLowerCase().endsWith(".pdf")) {
+            throw new BadRequestException("Invalid file format. Only PDF files are allowed");
+        }
+
+        try {
+            // Sử dụng resource_type "image" cho PDF để có thể xem inline
+            Map<String, Object> uploadParams = ObjectUtils.asMap(
+                    "resource_type", "image",
+                    "format", "pdf",
+                    "folder", folder,
+                    "overwrite", true,
+                    "type", "upload",
+                    "access_mode", "public");
+
+            Map uploadResult = cloudinary.uploader().upload(file.getBytes(), uploadParams);
+
+            return UploadResponse.builder()
+                    .url((String) uploadResult.get("secure_url"))
+                    .publicId((String) uploadResult.get("public_id"))
+                    .format((String) uploadResult.get("format"))
+                    .bytes(((Number) uploadResult.get("bytes")).longValue())
+                    .build();
+
+        } catch (IOException e) {
+            log.error("Error uploading PDF to Cloudinary", e);
+            throw new BadRequestException("Failed to upload PDF: " + e.getMessage());
+        }
+    }
+
     public UploadResponse uploadImage(MultipartFile file) {
         // Validate file
         if (file.isEmpty()) {

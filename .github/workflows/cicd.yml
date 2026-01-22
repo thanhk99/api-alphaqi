@@ -52,7 +52,7 @@ jobs:
           source: "target/app.jar"
           target: "/opt/api-alphaqi/app.jar"
           overwrite: true
-
+  
       # 6. Kiểm tra file trên server
       - name: Debug - check file on server
         uses: appleboy/ssh-action@v1
