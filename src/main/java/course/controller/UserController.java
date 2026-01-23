@@ -7,12 +7,13 @@ import course.security.CustomUserDetails;
 import course.service.UserService;
 import course.util.ApiResponse;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/users")
@@ -24,17 +25,19 @@ public class UserController {
         this.userService = userService;
     }
 
-    @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or #id == authentication.principal.username")
-    public ResponseEntity<ApiResponse<UserResponse>> getUserById(@PathVariable String id) {
-        UserResponse response = userService.getUserById(id);
+    @GetMapping("/{username}")
+    @PreAuthorize("hasRole('ADMIN') or #username == authentication.name")
+    public ResponseEntity<ApiResponse<UserResponse>> getUserByUsername(@PathVariable String username) {
+        UserResponse response = userService.getUserByUsername(username);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<List<UserResponse>>> getAllUsers() {
-        List<UserResponse> users = userService.getAllUsers();
+    public ResponseEntity<ApiResponse<Page<UserResponse>>> getAllUsers(
+            @RequestParam(required = false) String search,
+            @PageableDefault(size = 10) Pageable pageable) {
+        Page<UserResponse> users = userService.getAllUsers(search, pageable);
         return ResponseEntity.ok(ApiResponse.success(users));
     }
 
@@ -65,8 +68,8 @@ public class UserController {
     @PreAuthorize("hasAuthority('ROLE_USER') or hasAuthority('ROLE_ADMIN')")
     public ResponseEntity<ApiResponse<UserResponse>> getCurrentUser(Authentication authentication) {
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-        String userId = userDetails.getId();
-        UserResponse response = userService.getUserById(userId);
+        String username = userDetails.getUsername();
+        UserResponse response = userService.getUserByUsername(username);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -110,15 +113,19 @@ public class UserController {
 
     @GetMapping("/deleted")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<List<UserResponse>>> getDeletedUsers() {
-        List<UserResponse> users = userService.getDeletedUsers();
+    public ResponseEntity<ApiResponse<Page<UserResponse>>> getDeletedUsers(
+            @RequestParam(required = false) String search,
+            @PageableDefault(size = 10) Pageable pageable) {
+        Page<UserResponse> users = userService.getDeletedUsers(search, pageable);
         return ResponseEntity.ok(ApiResponse.success(users));
     }
 
     @GetMapping("/active")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<List<UserResponse>>> getActiveUsers() {
-        List<UserResponse> users = userService.getActiveUsers();
+    public ResponseEntity<ApiResponse<Page<UserResponse>>> getActiveUsers(
+            @RequestParam(required = false) String search,
+            @PageableDefault(size = 10) Pageable pageable) {
+        Page<UserResponse> users = userService.getActiveUsers(search, pageable);
         return ResponseEntity.ok(ApiResponse.success(users));
     }
 

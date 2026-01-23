@@ -9,13 +9,13 @@ import course.model.User;
 import course.model.enums.AccountStatus;
 import course.model.enums.MembershipLevel;
 import course.repository.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class UserService {
@@ -28,17 +28,23 @@ public class UserService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    public UserResponse getUserById(String id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
+    public UserResponse getUserByUsername(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
 
         return mapToResponse(user);
     }
 
-    public List<UserResponse> getAllUsers() {
-        return userRepository.findAll().stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+    public Page<UserResponse> getAllUsers(String search, Pageable pageable) {
+        Page<User> users;
+        if (search != null && !search.isBlank()) {
+            users = userRepository.findByFullNameContainingIgnoreCaseOrUsernameContainingIgnoreCase(search, search,
+                    pageable);
+        } else {
+            users = userRepository.findAll(pageable);
+        }
+
+        return users.map(this::mapToResponse);
     }
 
     @Transactional
@@ -111,18 +117,28 @@ public class UserService {
         return mapToResponse(user);
     }
 
-    public List<UserResponse> getDeletedUsers() {
-        return userRepository.findAll().stream()
-                .filter(user -> user.getDeletedAt() != null)
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+    public Page<UserResponse> getDeletedUsers(String search, Pageable pageable) {
+        Page<User> users;
+        if (search != null && !search.isBlank()) {
+            users = userRepository.findByStatusAndFullNameContainingIgnoreCaseOrStatusAndUsernameContainingIgnoreCase(
+                    AccountStatus.LOCKED, search, AccountStatus.LOCKED, search, pageable);
+        } else {
+            users = userRepository.findByStatus(AccountStatus.LOCKED, pageable);
+        }
+
+        return users.map(this::mapToResponse);
     }
 
-    public List<UserResponse> getActiveUsers() {
-        return userRepository.findAll().stream()
-                .filter(user -> user.getDeletedAt() == null)
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+    public Page<UserResponse> getActiveUsers(String search, Pageable pageable) {
+        Page<User> users;
+        if (search != null && !search.isBlank()) {
+            users = userRepository.findByStatusAndFullNameContainingIgnoreCaseOrStatusAndUsernameContainingIgnoreCase(
+                    AccountStatus.ACTIVE, search, AccountStatus.ACTIVE, search, pageable);
+        } else {
+            users = userRepository.findByStatus(AccountStatus.ACTIVE, pageable);
+        }
+
+        return users.map(this::mapToResponse);
     }
 
     // User profile management methods

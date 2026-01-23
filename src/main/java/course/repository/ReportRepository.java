@@ -14,7 +14,12 @@ import java.util.Optional;
 
 @Repository
 public interface ReportRepository extends JpaRepository<Report, Long> {
-    Page<Report> findByType(ReportType type, Pageable pageable);
+    Page<Report> findByTypeIn(java.util.List<ReportType> types, Pageable pageable);
+
+    Page<Report> findByTitleContainingIgnoreCase(String title, Pageable pageable);
+
+    Page<Report> findByTypeInAndTitleContainingIgnoreCase(java.util.List<ReportType> types, String title,
+            Pageable pageable);
 
     @Query("SELECT MAX(r.updatedAt) FROM Report r")
     LocalDateTime findLatestUpdatedAt();

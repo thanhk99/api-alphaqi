@@ -16,6 +16,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -23,16 +27,38 @@ public class ReportService {
     private final ReportRepository reportRepository;
     private final CloudinaryService cloudinaryService;
 
+    public List<Map<String, Object>> getReportTypes() {
+        return Arrays.stream(ReportType.values())
+                .map(type -> {
+                    Map<String, Object> map = new java.util.HashMap<>();
+                    map.put("code", type.name());
+                    map.put("displayName", type.getDisplayName());
+                    map.put("parentCode", type.getParent() != null ? type.getParent().name() : null);
+                    map.put("isParent", Arrays.stream(ReportType.values()).anyMatch(t -> t.getParent() == type));
+                    return map;
+                })
+                .collect(Collectors.toList());
+    }
+
     @Transactional(readOnly = true)
-    public ReportPagedResponse getAllReports(ReportType type, Pageable pageable) {
+    public ReportPagedResponse getAllReports(ReportType type, String search, Pageable pageable) {
         Page<Report> reports;
         LocalDateTime latestUpdatedAt;
 
         if (type != null) {
-            reports = reportRepository.findByType(type, pageable);
+            List<ReportType> types = getTypesIncludingChildren(type);
+            if (search != null && !search.isBlank()) {
+                reports = reportRepository.findByTypeInAndTitleContainingIgnoreCase(types, search, pageable);
+            } else {
+                reports = reportRepository.findByTypeIn(types, pageable);
+            }
             latestUpdatedAt = reportRepository.findLatestUpdatedAtByType(type);
         } else {
-            reports = reportRepository.findAll(pageable);
+            if (search != null && !search.isBlank()) {
+                reports = reportRepository.findByTitleContainingIgnoreCase(search, pageable);
+            } else {
+                reports = reportRepository.findAll(pageable);
+            }
             latestUpdatedAt = reportRepository.findLatestUpdatedAt();
         }
 
@@ -40,6 +66,15 @@ public class ReportService {
                 .reports(reports.map(this::convertToResponse))
                 .latestUpdatedAt(latestUpdatedAt)
                 .build();
+    }
+
+    private List<ReportType> getTypesIncludingChildren(ReportType type) {
+        List<ReportType> types = new java.util.ArrayList<>();
+        types.add(type);
+        types.addAll(Arrays.stream(ReportType.values())
+                .filter(t -> t.getParent() == type)
+                .collect(Collectors.toList()));
+        return types;
     }
 
     @Transactional(readOnly = true)
@@ -108,6 +143,10 @@ public class ReportService {
                 .typeDisplayName(report.getType() != null ? report.getType().getDisplayName() : null)
                 .pdfUrl(report.getPdfUrl())
                 .externalLink(report.getExternalLink())
+                .parentType(report.getType() != null ? report.getType().getParent() : null)
+                .parentTypeDisplayName(report.getType() != null && report.getType().getParent() != null
+                        ? report.getType().getParent().getDisplayName()
+                        : null)
                 .createdAt(report.getCreatedAt())
                 .updatedAt(report.getUpdatedAt())
                 .build();

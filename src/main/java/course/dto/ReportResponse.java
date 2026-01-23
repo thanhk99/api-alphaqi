@@ -20,6 +20,8 @@ public class ReportResponse {
     private String typeDisplayName;
     private String pdfUrl;
     private String externalLink;
+    private ReportType parentType;
+    private String parentTypeDisplayName;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
