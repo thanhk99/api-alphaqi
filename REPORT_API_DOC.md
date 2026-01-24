@@ -48,22 +48,37 @@ Lấy danh sách báo cáo có hỗ trợ lọc theo loại, tìm kiếm theo ti
 
 ### Tạo báo cáo mới
 - **Endpoint**: `POST /reports`
+- **Quyền hạn**: `ROLE_ADMIN`
 - **Content-Type**: `multipart/form-data`
-- **Body**:
-  - `title` (text): Tiêu đề báo cáo.
-  - `description` (text): Mô tả chi tiết.
-  - `type` (text): Loại báo cáo.
-  - `file` (file, optional): Tệp đính kèm hoặc hình ảnh.
+- **Tham số**:
+  - `title` (text, bắt buộc): Tiêu đề báo cáo.
+  - `description` (text, bắt buộc): Mô tả chi tiết.
+  - `type` (text, bắt buộc): Loại báo cáo (ví dụ: `ASSET_ALLOCATION`, `MACRO_TOPICAL`, ...). Xem danh sách đầy đủ ở mục 5.
+  - `file` (file, tùy chọn): Tệp PDF đính kèm hoặc hình ảnh.
 - **Trả về**: `ApiResponse<ReportResponse>`
+- **Ví dụ request** (sử dụng FormData):
+  ```
+  title: "Báo cáo phân bổ tài sản Q1 2024"
+  description: "Phân tích chi tiết về phân bổ tài sản..."
+  type: "ASSET_ALLOCATION"
+  file: [File object]
+  ```
 
 ### Cập nhật báo cáo
 - **Endpoint**: `PUT /reports/{id}`
+- **Quyền hạn**: `ROLE_ADMIN`
 - **Content-Type**: `multipart/form-data`
-- **Body**: Tương tự như tạo mới.
+- **Tham số**: Tương tự như tạo mới (tất cả đều bắt buộc).
+  - `title` (text, bắt buộc): Tiêu đề báo cáo.
+  - `description` (text, bắt buộc): Mô tả chi tiết.
+  - `type` (text, bắt buộc): Loại báo cáo.
+  - `file` (file, tùy chọn): Tệp PDF đính kèm hoặc hình ảnh mới (nếu muốn thay đổi).
 - **Trả về**: `ApiResponse<ReportResponse>`
+- **Lưu ý**: Nếu không gửi `file`, file cũ sẽ được giữ nguyên.
 
 ### Xóa báo cáo
 - **Endpoint**: `DELETE /reports/{id}`
+- **Quyền hạn**: `ROLE_ADMIN`
 - **Trả về**: `ApiResponse<Void>`
 
 ---

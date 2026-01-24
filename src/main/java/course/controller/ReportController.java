@@ -47,8 +47,15 @@ public class ReportController {
     @PostMapping(consumes = { "multipart/form-data" })
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public ResponseEntity<ApiResponse<ReportResponse>> createReport(
-            @ModelAttribute ReportRequest request,
+            @RequestParam String title,
+            @RequestParam String description,
+            @RequestParam ReportType type,
             @RequestPart(value = "file", required = false) MultipartFile file) {
+        ReportRequest request = ReportRequest.builder()
+                .title(title)
+                .description(description)
+                .type(type)
+                .build();
         ReportResponse response = reportService.createReport(request, file);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Report created successfully", response));
@@ -58,8 +65,15 @@ public class ReportController {
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public ResponseEntity<ApiResponse<ReportResponse>> updateReport(
             @PathVariable Long id,
-            @ModelAttribute ReportRequest request,
+            @RequestParam String title,
+            @RequestParam String description,
+            @RequestParam ReportType type,
             @RequestPart(value = "file", required = false) MultipartFile file) {
+        ReportRequest request = ReportRequest.builder()
+                .title(title)
+                .description(description)
+                .type(type)
+                .build();
         ReportResponse response = reportService.updateReport(id, request, file);
         return ResponseEntity.ok(ApiResponse.success("Report updated successfully", response));
     }
