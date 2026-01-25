@@ -18,35 +18,21 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      # 1. Build
       - name: Build project
-        run: |
-          mvn clean package -DskipTests
+        run: mvn clean package -DskipTests
 
-      # 2. Debug - list target folder
-      - name: Debug - list target folder
-        run: |
-          echo "=== LIST TARGET FOLDER ==="
-          ls -l target
-          echo "=========================="
-
-      # 3. Rename jar (đảm bảo file jar)
-      - name: Rename jar
+      - name: Rename jar to app.jar
         run: |
           JAR=$(ls target/*.jar | head -n 1)
           echo "Jar found: $JAR"
           mv "$JAR" target/app.jar
 
-      # 4. Debug - check jar
-      - name: Debug - check jar
+      - name: Verify jar locally
         run: |
-          echo "=== CHECK FILE ==="
           ls -l target/app.jar
           file target/app.jar
-          echo "=================="
 
-      # 5. Copy jar to server
-      - name: Copy jar to server
+      - name: Copy jar to server (file, không phải folder)
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SERVER_IP }}
@@ -56,20 +42,18 @@ jobs:
           target: "/opt/api-alphaqi/app.jar"
           overwrite: true
 
-      # 6. Check file on server
-      - name: Debug - check file on server
+      - name: Verify jar on server
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SERVER_IP }}
           username: root
           key: ${{ secrets.SSH_KEY }}
           script: |
-            echo "=== CHECK SERVER FOLDER ==="
+            echo "=== CHECK FILE ON SERVER ==="
             ls -l /opt/api-alphaqi
             file /opt/api-alphaqi/app.jar
             echo "==========================="
 
-      # 7. Restart service
       - name: Restart service
         uses: appleboy/ssh-action@v1
         with:
