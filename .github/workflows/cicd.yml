@@ -23,26 +23,29 @@ jobs:
         run: |
           mvn clean package -DskipTests
 
-      # 2. Kiểm tra thư mục target
+      # 2. Debug - list target folder
       - name: Debug - list target folder
         run: |
           echo "=== LIST TARGET FOLDER ==="
           ls -l target
           echo "=========================="
 
-      # 3. Đổi tên jar (cho chắc chắn)
+      # 3. Rename jar (đảm bảo file jar)
       - name: Rename jar
         run: |
-          mv target/*.jar target/app.jar
+          JAR=$(ls target/*.jar | head -n 1)
+          echo "Jar found: $JAR"
+          mv "$JAR" target/app.jar
 
-      # 4. Kiểm tra jar sau rename
+      # 4. Debug - check jar
       - name: Debug - check jar
         run: |
           echo "=== CHECK FILE ==="
           ls -l target/app.jar
+          file target/app.jar
           echo "=================="
 
-      # 5. Copy jar (DEBUG MODE)
+      # 5. Copy jar to server
       - name: Copy jar to server
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -50,10 +53,10 @@ jobs:
           username: root
           key: ${{ secrets.SSH_KEY }}
           source: "target/app.jar"
-          target: "/opt/api-alphaqi/"
+          target: "/opt/api-alphaqi/app.jar"
           overwrite: true
-  
-      # 6. Kiểm tra file trên server
+
+      # 6. Check file on server
       - name: Debug - check file on server
         uses: appleboy/ssh-action@v1
         with:
@@ -63,6 +66,7 @@ jobs:
           script: |
             echo "=== CHECK SERVER FOLDER ==="
             ls -l /opt/api-alphaqi
+            file /opt/api-alphaqi/app.jar
             echo "==========================="
 
       # 7. Restart service
@@ -73,5 +77,6 @@ jobs:
           username: root
           key: ${{ secrets.SSH_KEY }}
           script: |
-            systemctl restart api-alphaqi
+            systemctl stop api-alphaqi || true
+            systemctl start api-alphaqi
             systemctl status api-alphaqi --no-pager
