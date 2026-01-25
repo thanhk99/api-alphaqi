@@ -9,69 +9,64 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      # 1️⃣ Checkout source
+      - name: Checkout code
         uses: actions/checkout@v4
 
+      # 2️⃣ Setup Java
       - name: Setup Java 21
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: temurin
           java-version: '21'
 
-      # 1. Build
+      # 3️⃣ Build project
       - name: Build project
         run: |
           mvn clean package -DskipTests
 
-      # 2. Kiểm tra thư mục target
-      - name: Debug - list target folder
+      # 4️⃣ Xác định đúng jar cần chạy
+      - name: Prepare app.jar
         run: |
-          echo "=== LIST TARGET FOLDER ==="
-          ls -l target
-          echo "=========================="
+          echo "=== LIST TARGET ==="
+          ls -lh target
 
-      # 3. Đổi tên jar (cho chắc chắn)
-      - name: Rename jar
-        run: |
-          mv target/*.jar target/app.jar
+          JAR_FILE=$(ls target/*.jar | grep -v original | head -n 1)
+          echo "Using jar: $JAR_FILE"
 
-      # 4. Kiểm tra jar sau rename
-      - name: Debug - check jar
-        run: |
-          echo "=== CHECK FILE ==="
-          ls -l target/app.jar
-          echo "=================="
+          cp "$JAR_FILE" target/app.jar
+          ls -lh target/app.jar
 
-      # 5. Copy jar (DEBUG MODE)
-      - name: Copy jar to server
+      # 5️⃣ Copy jar sang server
+      - name: Copy app.jar to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SERVER_IP }}
           username: root
           key: ${{ secrets.SSH_KEY }}
           source: "target/app.jar"
-          target: "/opt/api-alphaqi/"
+          target: "/opt/api-alphaqi"
           overwrite: true
-  
-      # 6. Kiểm tra file trên server
-      - name: Debug - check file on server
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.SERVER_IP }}
-          username: root
-          key: ${{ secrets.SSH_KEY }}
-          script: |
-            echo "=== CHECK SERVER FOLDER ==="
-            ls -l /opt/api-alphaqi
-            echo "==========================="
 
-      # 7. Restart service
-      - name: Restart service
-        uses: appleboy/ssh-action@v1
+      # 6️⃣ Replace jar & restart service (AN TOÀN)
+      - name: Deploy & restart service
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_IP }}
           username: root
           key: ${{ secrets.SSH_KEY }}
           script: |
-            systemctl restart api-alphaqi
+            set -e
+            echo "=== STOP SERVICE ==="
+            systemctl stop api-alphaqi
+
+            echo "=== UPDATE JAR ==="
+            ls -lh /opt/api-alphaqi
+            chmod +x /opt/api-alphaqi/app.jar
+
+            echo "=== VERIFY JAR CONTENT ==="
+            strings /opt/api-alphaqi/app.jar | grep ASSET_ALLOCATION || true
+
+            echo "=== START SERVICE ==="
+            systemctl start api-alphaqi
             systemctl status api-alphaqi --no-pager
