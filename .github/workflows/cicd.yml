@@ -29,12 +29,15 @@ jobs:
 
       - name: Rename jar to app.jar
         run: |
-          JAR=$(ls target/*.jar | head -n 1)
+          # lấy đúng file jar
+          JAR=$(find target -maxdepth 1 -type f -name "*.jar" | head -n 1)
           echo "Jar found: $JAR"
-          if [ ! -f "$JAR" ]; then
-            echo "Jar not found!"
+
+          if [ -z "$JAR" ]; then
+            echo "❌ ERROR: No jar file found in target!"
             exit 1
           fi
+
           mv "$JAR" target/app.jar
 
       - name: Debug - check jar
