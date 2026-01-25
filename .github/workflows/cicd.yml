@@ -9,35 +9,25 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout source
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2️⃣ Setup Java
       - name: Setup Java 21
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
 
-      # 3️⃣ Build project
       - name: Build project
-        run: |
-          mvn clean package -DskipTests
+        run: mvn clean package -DskipTests
 
-      # 4️⃣ Xác định đúng jar cần chạy
       - name: Prepare app.jar
         run: |
-          echo "=== LIST TARGET ==="
-          ls -lh target
-
           JAR_FILE=$(ls target/*.jar | grep -v original | head -n 1)
-          echo "Using jar: $JAR_FILE"
-
+          echo "JAR_FILE=$JAR_FILE"
           cp "$JAR_FILE" target/app.jar
           ls -lh target/app.jar
 
-      # 5️⃣ Copy jar sang server
       - name: Copy app.jar to server
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -45,10 +35,24 @@ jobs:
           username: root
           key: ${{ secrets.SSH_KEY }}
           source: "target/app.jar"
-          target: "/opt/api-alphaqi"
+          target: "/opt/api-alphaqi/app.jar"
           overwrite: true
 
-      # 6️⃣ Replace jar & restart service (AN TOÀN)
+      - name: Verify jar on server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: root
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            echo "=== CHECK /opt/api-alphaqi ==="
+            ls -l /opt/api-alphaqi
+            echo "=== CHECK app.jar ==="
+            ls -l /opt/api-alphaqi/app.jar || (echo "MISSING app.jar" && exit 1)
+            file /opt/api-alphaqi/app.jar
+            echo "=== JAR SIZE ==="
+            ls -lh /opt/api-alphaqi/app.jar
+
       - name: Deploy & restart service
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -57,16 +61,7 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             set -e
-            echo "=== STOP SERVICE ==="
-            systemctl stop api-alphaqi
-
-            echo "=== UPDATE JAR ==="
-            ls -lh /opt/api-alphaqi
+            systemctl stop api-alphaqi || true
             chmod +x /opt/api-alphaqi/app.jar
-
-            echo "=== VERIFY JAR CONTENT ==="
-            strings /opt/api-alphaqi/app.jar | grep ASSET_ALLOCATION || true
-
-            echo "=== START SERVICE ==="
             systemctl start api-alphaqi
             systemctl status api-alphaqi --no-pager
