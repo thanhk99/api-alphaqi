@@ -5,6 +5,7 @@ Tài liệu này mô tả các API liên quan đến hệ thống báo cáo, bao
 ## Thông tin chung
 - **Base Path**: `/reports`
 - **Cấu trúc trả về**: `ApiResponse<T>`
+- **Binding**: Đối với các API `POST/PUT` dùng `multipart/form-data`, các trường text được map trực tiếp vào thuộc tính của object (Spring `ModelAttribute`).
 
 ---
 
@@ -54,27 +55,32 @@ Lấy danh sách báo cáo có hỗ trợ lọc theo loại, tìm kiếm theo ti
   - `title` (text, bắt buộc): Tiêu đề báo cáo.
   - `description` (text, bắt buộc): Mô tả chi tiết.
   - `type` (text, bắt buộc): Loại báo cáo (ví dụ: `ASSET_ALLOCATION`, `MACRO_TOPICAL`, ...). Xem danh sách đầy đủ ở mục 5.
-  - `file` (file, tùy chọn): Tệp PDF đính kèm hoặc hình ảnh.
+  - `pdfUrl` (text, tùy chọn): Link báo cáo PDF (bắt buộc nếu không upload file).
+  - `externalUrl` (text, tùy chọn): Link liên kết từ bên ngoài vào.
+  - `file` (file, tùy chọn): Tệp PDF đính kèm hoặc hình ảnh (bắt buộc nếu không có `pdfUrl`).
 - **Trả về**: `ApiResponse<ReportResponse>`
 - **Ví dụ request** (sử dụng FormData):
   ```
   title: "Báo cáo phân bổ tài sản Q1 2024"
   description: "Phân tích chi tiết về phân bổ tài sản..."
   type: "ASSET_ALLOCATION"
-  file: [File object]
+  pdfUrl: "https://example.com/report.pdf"
+  externalUrl: "https://example.com/external-info"
   ```
 
 ### Cập nhật báo cáo
 - **Endpoint**: `PUT /reports/{id}`
 - **Quyền hạn**: `ROLE_ADMIN`
 - **Content-Type**: `multipart/form-data`
-- **Tham số**: Tương tự như tạo mới (tất cả đều bắt buộc).
+- **Tham số**: Tương tự như tạo mới.
   - `title` (text, bắt buộc): Tiêu đề báo cáo.
   - `description` (text, bắt buộc): Mô tả chi tiết.
   - `type` (text, bắt buộc): Loại báo cáo.
-  - `file` (file, tùy chọn): Tệp PDF đính kèm hoặc hình ảnh mới (nếu muốn thay đổi).
+  - `pdfUrl` (text, tùy chọn): Link báo cáo PDF mới.
+  - `externalUrl` (text, tùy chọn): Link liên kết từ bên ngoài mới.
+  - `file` (file, tùy chọn): Tệp PDF/Hình ảnh mới.
 - **Trả về**: `ApiResponse<ReportResponse>`
-- **Lưu ý**: Nếu không gửi `file`, file cũ sẽ được giữ nguyên.
+- **Lưu ý**: Nếu không gửi `file`, `pdfUrl` cũ sẽ được giữ nguyên trừ khi `pdfUrl` mới được cung cấp.
 
 ### Xóa báo cáo
 - **Endpoint**: `DELETE /reports/{id}`
@@ -123,7 +129,8 @@ Khi tạo hoặc cập nhật báo cáo qua API `POST /reports` hoặc `PUT /rep
   "typeDisplayName": "Báo cáo chuyên đề Vĩ mô",
   "parentType": "MACRO",
   "parentTypeDisplayName": "Báo cáo vĩ mô",
-  "pdUrl": "https://cloudinary.com/...",
+  "pdfUrl": "https://cloudinary.com/...",
+  "externalUrl": "https://example.com/link-ngoai",
   "createdAt": "2024-01-23T10:00:00",
   "updatedAt": "2024-01-23T15:00:00"
 }

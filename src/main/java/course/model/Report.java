@@ -30,13 +30,17 @@ public class Report {
     @Column(nullable = false)
     private ReportType type;
 
-    private String pdfUrl; // Link từ Cloudinary hoặc link trực tiếp
+    @Column(name = "pdf_url", nullable = false)
+    private String pdfUrl; // Link báo cáo PDF
 
-    private String externalLink; // Link sang bên khác xem
+    @Column(name = "external_url")
+    private String externalUrl; // Link từ bên ngoài vào
 
     @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 }

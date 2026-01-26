@@ -93,12 +93,16 @@ public class ReportService {
             pdfUrl = uploadResult.getUrl();
         }
 
+        if (pdfUrl == null || pdfUrl.isBlank()) {
+            throw new IllegalArgumentException("Report PDF URL or file is required");
+        }
+
         Report report = Report.builder()
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .type(request.getType())
                 .pdfUrl(pdfUrl)
-                .externalLink(request.getExternalLink())
+                .externalUrl(request.getExternalUrl())
                 .build();
 
         return convertToResponse(reportRepository.save(report));
@@ -118,10 +122,10 @@ public class ReportService {
         report.setTitle(request.getTitle());
         report.setDescription(request.getDescription());
         report.setType(request.getType());
-        if (pdfUrl != null) {
+        if (pdfUrl != null && !pdfUrl.isBlank()) {
             report.setPdfUrl(pdfUrl);
         }
-        report.setExternalLink(request.getExternalLink());
+        report.setExternalUrl(request.getExternalUrl());
 
         return convertToResponse(reportRepository.save(report));
     }
@@ -142,7 +146,7 @@ public class ReportService {
                 .type(report.getType())
                 .typeDisplayName(report.getType() != null ? report.getType().getDisplayName() : null)
                 .pdfUrl(report.getPdfUrl())
-                .externalLink(report.getExternalLink())
+                .externalUrl(report.getExternalUrl())
                 .parentType(report.getType() != null ? report.getType().getParent() : null)
                 .parentTypeDisplayName(report.getType() != null && report.getType().getParent() != null
                         ? report.getType().getParent().getDisplayName()

@@ -15,5 +15,5 @@ public class ReportRequest {
     private String description;
     private ReportType type;
     private String pdfUrl;
-    private String externalLink;
+    private String externalUrl;
 }

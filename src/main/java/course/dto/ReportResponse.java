@@ -19,7 +19,7 @@ public class ReportResponse {
     private ReportType type;
     private String typeDisplayName;
     private String pdfUrl;
-    private String externalLink;
+    private String externalUrl;
     private ReportType parentType;
     private String parentTypeDisplayName;
     private LocalDateTime createdAt;
