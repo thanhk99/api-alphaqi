@@ -1,4 +1,4 @@
-name: SpringBoot CI/CD
+name: Spring Boot CI/CD
 
 on:
   push:
@@ -10,69 +10,41 @@ jobs:
 
     steps:
       - name: Checkout
-
         uses: actions/checkout@v4
 
-
-      - name: Setup Java 21
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '21'
 
-      # 1. Build
-      - name: Build project
-        run: |
-          mvn clean package -DskipTests
+      - name: Build
+        run: mvn clean package -DskipTests
 
-      # 2. Kiểm tra thư mục target
-      - name: Debug - list target folder
+      - name: Prepare jar
         run: |
-          echo "=== LIST TARGET FOLDER ==="
-          ls -l target
-          echo "=========================="
+          JAR=$(ls target/*-SNAPSHOT.jar | head -n 1)
+          cp "$JAR" target/app.jar
 
-      # 3. Đổi tên jar (cho chắc chắn)
-      - name: Rename jar
-        run: |
-          mv target/*.jar target/app.jar
-
-      # 4. Kiểm tra jar sau rename
-      - name: Debug - check jar
-        run: |
-          echo "=== CHECK FILE ==="
-          ls -l target/app.jar
-          echo "=================="
-
-      # 5. Copy jar (DEBUG MODE)
-      - name: Copy jar to server
+      - name: Upload jar
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SERVER_IP }}
           username: root
           key: ${{ secrets.SSH_KEY }}
           source: "target/app.jar"
-          target: "/opt/api-alphaqi/"
+          target: "/opt/api-alphaqi/releases/api-${{ github.run_number }}.jar"
           overwrite: true
-  
-      # 6. Kiểm tra file trên server
-      - name: Debug - check file on server
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.SERVER_IP }}
-          username: root
-          key: ${{ secrets.SSH_KEY }}
-          script: |
-            echo "=== CHECK SERVER FOLDER ==="
-            ls -l /opt/api-alphaqi
-            echo "==========================="
 
-      # 7. Restart service
-      - name: Restart service
+      - name: Deploy
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SERVER_IP }}
           username: root
           key: ${{ secrets.SSH_KEY }}
           script: |
+            cd /opt/api-alphaqi
+            ln -sfn releases/api-${{ github.run_number }}.jar app.jar
             systemctl restart api-alphaqi
+            sleep 5
+            systemctl status api-alphaqi --no-pager
