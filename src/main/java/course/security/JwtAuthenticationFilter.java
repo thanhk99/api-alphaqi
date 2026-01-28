@@ -38,8 +38,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // Bypass for auth endpoints
         if (path.contains("/auth/login") ||
                 path.contains("/auth/register") ||
-                path.contains("/auth/refresh") ||
-                path.contains("/admins")) {
+                path.contains("/auth/refresh")) {
             return true;
         }
 

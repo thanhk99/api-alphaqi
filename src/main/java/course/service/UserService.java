@@ -48,9 +48,9 @@ public class UserService {
     }
 
     @Transactional
-    public UserResponse upgradeMembership(String userId, String level) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+    public UserResponse upgradeMembership(String username, String level) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
 
         try {
             MembershipLevel membershipLevel = MembershipLevel.valueOf(level.toUpperCase());
@@ -64,9 +64,9 @@ public class UserService {
     }
 
     @Transactional
-    public UserResponse lockUser(String id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
+    public UserResponse lockUser(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
 
         user.setStatus(AccountStatus.LOCKED);
         user = userRepository.save(user);
@@ -75,9 +75,9 @@ public class UserService {
     }
 
     @Transactional
-    public UserResponse unlockUser(String id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
+    public UserResponse unlockUser(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
 
         user.setStatus(AccountStatus.ACTIVE);
         user = userRepository.save(user);
@@ -86,9 +86,9 @@ public class UserService {
     }
 
     @Transactional
-    public UserResponse deleteUser(String id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
+    public UserResponse deleteUser(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
 
         if (user.getDeletedAt() != null) {
             throw new IllegalStateException("User is already deleted");
@@ -102,9 +102,9 @@ public class UserService {
     }
 
     @Transactional
-    public UserResponse restoreUser(String id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
+    public UserResponse restoreUser(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
 
         if (user.getDeletedAt() == null) {
             throw new IllegalStateException("User is not deleted");

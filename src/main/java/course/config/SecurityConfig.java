@@ -76,8 +76,6 @@ public class SecurityConfig {
                                 "/reports", "/reports/**", "/chart-items", "/chart-items/**")
                         .permitAll()
                         .requestMatchers(HttpMethod.GET, "/avatars/**").permitAll()
-                        // Public admin registration
-                        .requestMatchers(HttpMethod.POST, "/admins").permitAll()
 
                         // Admin only endpoints
                         .requestMatchers("/admins/**").hasAuthority("ROLE_ADMIN")

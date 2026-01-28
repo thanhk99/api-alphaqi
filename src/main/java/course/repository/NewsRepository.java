@@ -11,6 +11,8 @@ public interface NewsRepository extends JpaRepository<News, String> {
 
     List<News> findByIsPublished(Boolean isPublished);
 
+    List<News> findTop8ByIsPublishedTrueOrderByCreatedAtDesc();
+
     List<News> findTop8ByIsShowHomeTrueOrderByUpdatedAtDesc();
 
     long countByIsShowHomeTrue();

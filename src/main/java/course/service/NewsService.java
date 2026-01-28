@@ -4,7 +4,6 @@ import course.dto.NewsRequest;
 import course.dto.NewsResponse;
 import course.dto.UploadResponse;
 import course.util.HtmlSanitizer;
-import course.exception.BadRequestException;
 import course.exception.ResourceNotFoundException;
 import course.model.News;
 import course.repository.NewsRepository;
@@ -29,11 +28,6 @@ public class NewsService {
 
     @Transactional
     public NewsResponse createNews(NewsRequest request, MultipartFile thumbnail) {
-        // Validate isShowHome limit (max 8)
-        if (Boolean.TRUE.equals(request.getIsShowHome())) {
-            validateIsShowHomeLimit();
-        }
-
         News news = new News();
         updateNewsFromRequest(news, request);
 
@@ -53,11 +47,6 @@ public class NewsService {
     public NewsResponse updateNews(String id, NewsRequest request, MultipartFile thumbnail) {
         News news = newsRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("News", "id", id));
-
-        // Validate isShowHome limit if changing to true
-        if (Boolean.TRUE.equals(request.getIsShowHome()) && !Boolean.TRUE.equals(news.getIsShowHome())) {
-            validateIsShowHomeLimit();
-        }
 
         updateNewsFromRequest(news, request);
 
@@ -100,16 +89,9 @@ public class NewsService {
     }
 
     public List<NewsResponse> getFeaturedNews() {
-        return newsRepository.findTop8ByIsShowHomeTrueOrderByUpdatedAtDesc().stream()
+        return newsRepository.findTop8ByIsPublishedTrueOrderByCreatedAtDesc().stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
-    }
-
-    private void validateIsShowHomeLimit() {
-        long count = newsRepository.countByIsShowHomeTrue();
-        if (count >= 8) {
-            throw new BadRequestException("Cannot set more than 8 news items to show on home page");
-        }
     }
 
     private void updateNewsFromRequest(News news, NewsRequest request) {

@@ -65,7 +65,11 @@ public class AdminService {
     }
 
     @Transactional
-    public AdminResponse lockAdmin(String id) {
+    public AdminResponse lockAdmin(String id, String currentAdminId) {
+        if (id.equals(currentAdminId)) {
+            throw new BadRequestException("You cannot lock yourself");
+        }
+
         Admin admin = adminRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Admin", "id", id));
 
@@ -84,6 +88,18 @@ public class AdminService {
         admin = adminRepository.save(admin);
 
         return mapToResponse(admin);
+    }
+
+    @Transactional
+    public void deleteAdmin(String id, String currentAdminId) {
+        if (id.equals(currentAdminId)) {
+            throw new BadRequestException("You cannot delete yourself");
+        }
+
+        Admin admin = adminRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Admin", "id", id));
+
+        adminRepository.delete(admin);
     }
 
     public List<AdminResponse> getAllAdmins() {

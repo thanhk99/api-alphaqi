@@ -74,40 +74,40 @@ public class UserController {
     }
 
     // Admin endpoints
-    @PutMapping("/{id}/membership")
+    @PutMapping("/{username}/membership")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<UserResponse>> upgradeMembership(
-            @PathVariable String id,
+            @PathVariable String username,
             @RequestParam String level) {
-        UserResponse response = userService.upgradeMembership(id, level);
+        UserResponse response = userService.upgradeMembership(username, level);
         return ResponseEntity.ok(ApiResponse.success("Membership upgraded successfully", response));
     }
 
-    @PutMapping("/{id}/lock")
+    @PutMapping("/{username}/lock")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<UserResponse>> lockUser(@PathVariable String id) {
-        UserResponse response = userService.lockUser(id);
+    public ResponseEntity<ApiResponse<UserResponse>> lockUser(@PathVariable String username) {
+        UserResponse response = userService.lockUser(username);
         return ResponseEntity.ok(ApiResponse.success("User locked successfully", response));
     }
 
-    @PutMapping("/{id}/unlock")
+    @PutMapping("/{username}/unlock")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<UserResponse>> unlockUser(@PathVariable String id) {
-        UserResponse response = userService.unlockUser(id);
+    public ResponseEntity<ApiResponse<UserResponse>> unlockUser(@PathVariable String username) {
+        UserResponse response = userService.unlockUser(username);
         return ResponseEntity.ok(ApiResponse.success("User unlocked successfully", response));
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{username}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<UserResponse>> deleteUser(@PathVariable String id) {
-        UserResponse response = userService.deleteUser(id);
+    public ResponseEntity<ApiResponse<UserResponse>> deleteUser(@PathVariable String username) {
+        UserResponse response = userService.deleteUser(username);
         return ResponseEntity.ok(ApiResponse.success("User deleted successfully", response));
     }
 
-    @PutMapping("/{id}/restore")
+    @PutMapping("/{username}/restore")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<UserResponse>> restoreUser(@PathVariable String id) {
-        UserResponse response = userService.restoreUser(id);
+    public ResponseEntity<ApiResponse<UserResponse>> restoreUser(@PathVariable String username) {
+        UserResponse response = userService.restoreUser(username);
         return ResponseEntity.ok(ApiResponse.success("User restored successfully", response));
     }
 
