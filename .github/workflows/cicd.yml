@@ -1,4 +1,4 @@
-name: Spring Boot CI/CD
+name: SpringBoot CI/CD
 
 on:
   push:
@@ -9,42 +9,54 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1️⃣ Checkout code
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Java
+      # 2️⃣ Setup Java 21
+      - name: Setup Java 21
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Build
-        run: mvn clean package -DskipTests
-
-      - name: Prepare jar
+      # 3️⃣ Build project
+      - name: Build project
         run: |
-          JAR=$(ls target/*-SNAPSHOT.jar | head -n 1)
-          cp "$JAR" target/app.jar
+          mvn clean package -DskipTests
 
-      - name: Upload jar
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SERVER_IP }}
-          username: root
-          key: ${{ secrets.SSH_KEY }}
-          source: "target/app.jar"
-          target: "/opt/api-alphaqi/releases/api-${{ github.run_number }}.jar"
-          overwrite: true
+      # 4️⃣ Rename jar chuẩn
+      - name: Rename jar
+        run: |
+          mv target/*.jar target/app.jar
 
-      - name: Deploy
+      # 5️⃣ Copy jar và restart service trên server
+      - name: Deploy to server
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SERVER_IP }}
           username: root
           key: ${{ secrets.SSH_KEY }}
           script: |
-            cd /opt/api-alphaqi
-            ln -sfn releases/api-${{ github.run_number }}.jar app.jar
-            systemctl restart api-alphaqi
-            sleep 5
+            # ----- Stop service cũ -----
+            systemctl stop api-alphaqi || true
+
+            # ----- Kill port 8001 nếu còn -----
+            pid=$(ss -lntp | grep 8001 | awk '{print $7}' | cut -d',' -f1)
+            if [ ! -z "$pid" ]; then
+              echo "Killing process $pid occupying port 8001"
+              kill -9 $pid
+            fi
+
+            # ----- Copy jar mới -----
+            mkdir -p /opt/api-alphaqi/releases
+            cp /home/api-alphaqi/target/app.jar /opt/api-alphaqi/releases/api-$(date +%Y-%m-%d-%H%M%S).jar
+            ln -sfn /opt/api-alphaqi/releases/api-$(date +%Y-%m-%d-%H%M%S).jar /opt/api-alphaqi/app.jar
+
+            # ----- Start service -----
+            systemctl daemon-reload
+            systemctl enable api-alphaqi
+            systemctl start api-alphaqi
+
+            # ----- Check status -----
             systemctl status api-alphaqi --no-pager
