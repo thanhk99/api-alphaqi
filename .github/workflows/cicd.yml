@@ -1,4 +1,4 @@
-name: Spring Boot CI/CD
+name: Deploy Spring Boot Service
 
 on:
   push:
@@ -9,42 +9,34 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '21'
+    - name: Set up Java
+      uses: actions/setup-java@v3
+      with:
+        distribution: temurin
+        java-version: 17
 
-      - name: Build
-        run: mvn clean package -DskipTests
+    - name: Build Spring Boot Jar
+      run: ./mvnw clean package -DskipTests
 
-      - name: Prepare jar
-        run: |
-          JAR=$(ls target/*-SNAPSHOT.jar | head -n 1)
-          cp "$JAR" target/app.jar
+    - name: Copy Jar to Server
+      uses: appleboy/scp-action@v0.1.4
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        source: target/app.jar
+        target: /opt/api-alphaqi/app.jar
 
-      - name: Upload jar
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SERVER_IP }}
-          username: root
-          key: ${{ secrets.SSH_KEY }}
-          source: "target/app.jar"
-          target: "/opt/api-alphaqi/releases/api-${{ github.run_number }}.jar"
-          overwrite: true
-
-      - name: Deploy
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.SERVER_IP }}
-          username: root
-          key: ${{ secrets.SSH_KEY }}
-          script: |
-            cd /opt/api-alphaqi
-            ln -sfn releases/api-${{ github.run_number }}.jar app.jar
-            systemctl restart api-alphaqi
-            sleep 5
-            systemctl status api-alphaqi --no-pager
+    - name: Restart Service
+      uses: appleboy/ssh-action@v0.1.7
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        script: |
+          sudo systemctl daemon-reload
+          sudo systemctl restart api-alphaqi
+          sudo systemctl status api-alphaqi --no-pager
