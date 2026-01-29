@@ -14,4 +14,6 @@ public interface ArticleRepository extends JpaRepository<Article, String> {
     List<Article> findByType(ArticleType type);
 
     List<Article> findByIsPublishedAndType(Boolean isPublished, ArticleType type);
+
+    List<Article> findTop8ByIsPublishedTrueOrderByCreatedAtDesc();
 }

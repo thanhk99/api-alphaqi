@@ -19,6 +19,7 @@ public class NewsResponse {
     private String description;
     private String content;
     private String thumbnail;
+    private String type;
     private Boolean isPublished;
     private Boolean isShowHome;
     private LocalDateTime createdAt;

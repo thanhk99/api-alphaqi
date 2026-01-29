@@ -11,18 +11,26 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import course.model.Article;
+import course.repository.ArticleRepository;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @Transactional(readOnly = true)
 public class NewsService {
 
     private final NewsRepository newsRepository;
+    private final ArticleRepository articleRepository;
     private final CloudinaryService cloudinaryService;
 
-    public NewsService(NewsRepository newsRepository, CloudinaryService cloudinaryService) {
+    public NewsService(NewsRepository newsRepository, ArticleRepository articleRepository,
+            CloudinaryService cloudinaryService) {
         this.newsRepository = newsRepository;
+        this.articleRepository = articleRepository;
         this.cloudinaryService = cloudinaryService;
     }
 
@@ -77,20 +85,45 @@ public class NewsService {
     }
 
     public List<NewsResponse> getAllNews() {
-        return newsRepository.findAll().stream()
+        List<NewsResponse> newsList = newsRepository.findAll().stream()
                 .map(this::mapToResponse)
+                .collect(Collectors.toList());
+
+        List<NewsResponse> articleList = articleRepository.findAll().stream()
+                .map(this::mapArticleToResponse)
+                .collect(Collectors.toList());
+
+        return Stream.concat(newsList.stream(), articleList.stream())
+                .sorted(Comparator.comparing(NewsResponse::getCreatedAt).reversed())
                 .collect(Collectors.toList());
     }
 
     public List<NewsResponse> getPublishedNews() {
-        return newsRepository.findByIsPublished(true).stream()
+        List<NewsResponse> newsList = newsRepository.findByIsPublished(true).stream()
                 .map(this::mapToResponse)
+                .collect(Collectors.toList());
+
+        List<NewsResponse> articleList = articleRepository.findByIsPublished(true).stream()
+                .map(this::mapArticleToResponse)
+                .collect(Collectors.toList());
+
+        return Stream.concat(newsList.stream(), articleList.stream())
+                .sorted(Comparator.comparing(NewsResponse::getCreatedAt).reversed())
                 .collect(Collectors.toList());
     }
 
     public List<NewsResponse> getFeaturedNews() {
-        return newsRepository.findTop8ByIsPublishedTrueOrderByCreatedAtDesc().stream()
+        List<NewsResponse> newsList = newsRepository.findTop8ByIsPublishedTrueOrderByCreatedAtDesc().stream()
                 .map(this::mapToResponse)
+                .collect(Collectors.toList());
+
+        List<NewsResponse> articleList = articleRepository.findTop8ByIsPublishedTrueOrderByCreatedAtDesc().stream()
+                .map(this::mapArticleToResponse)
+                .collect(Collectors.toList());
+
+        return Stream.concat(newsList.stream(), articleList.stream())
+                .sorted(Comparator.comparing(NewsResponse::getCreatedAt).reversed())
+                .limit(8)
                 .collect(Collectors.toList());
     }
 
@@ -109,10 +142,26 @@ public class NewsService {
                 .description(news.getDescription())
                 .content(news.getContent())
                 .thumbnail(news.getThumbnail())
+                .type("NEWS")
                 .isPublished(news.getIsPublished())
                 .isShowHome(news.getIsShowHome())
                 .createdAt(news.getCreatedAt())
                 .updatedAt(news.getUpdatedAt())
+                .build();
+    }
+
+    private NewsResponse mapArticleToResponse(Article article) {
+        return NewsResponse.builder()
+                .id(article.getId())
+                .title(article.getTitle())
+                .description(article.getDescription())
+                .content(article.getContent())
+                .thumbnail(article.getThumbnail())
+                .type("BLOG")
+                .isPublished(article.getIsPublished())
+                .isShowHome(false) // Articles don't have isShowHome property
+                .createdAt(article.getCreatedAt())
+                .updatedAt(article.getUpdatedAt())
                 .build();
     }
 }
