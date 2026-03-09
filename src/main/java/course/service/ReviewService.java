@@ -1,5 +1,6 @@
 package course.service;
 
+import course.dto.PageResponse;
 import course.dto.ReviewRequest;
 import course.dto.ReviewResponse;
 import course.exception.BadRequestException;
@@ -11,6 +12,8 @@ import course.model.User;
 import course.repository.CourseRepository;
 import course.repository.ReviewRepository;
 import course.repository.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,7 +37,9 @@ public class ReviewService {
 
     @Transactional
     public ReviewResponse createReview(String userId, String courseId, ReviewRequest request) {
-        // Verify user exists
+        if (userId == null) {
+            throw new BadRequestException("User ID must not be null");
+        }
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
@@ -63,29 +68,38 @@ public class ReviewService {
     }
 
     @Transactional(readOnly = true)
-    public List<ReviewResponse> getAllReviews() {
-        return reviewRepository.findAll().stream()
-                .map(review -> {
-                    String userName = review.getUser() != null ? review.getUser().getFullName() : "Unknown User";
-                    String courseTitle = review.getCourse() != null ? review.getCourse().getTitle() : "Unknown Course";
-                    return mapToResponse(review, userName, courseTitle);
-                })
-                .collect(Collectors.toList());
+    public PageResponse<ReviewResponse> getAllReviews(Pageable pageable) {
+        Page<Review> reviewPage = reviewRepository.findAll(pageable != null ? pageable : Pageable.unpaged());
+        return mapToPageResponse(reviewPage);
     }
 
     @Transactional(readOnly = true)
-    public List<ReviewResponse> getReviewsByCourse(String courseId) {
+    public PageResponse<ReviewResponse> getReviewsByCourse(String courseId, Pageable pageable) {
         if (!courseRepository.existsById(courseId)) {
             throw new ResourceNotFoundException("Course not found");
         }
 
-        return reviewRepository.findByCourseIdOrderByCreatedAtDesc(courseId).stream()
+        Page<Review> reviewPage = reviewRepository.findByCourseIdOrderByCreatedAtDesc(courseId, pageable);
+        return mapToPageResponse(reviewPage);
+    }
+
+    private PageResponse<ReviewResponse> mapToPageResponse(Page<Review> reviewPage) {
+        List<ReviewResponse> content = reviewPage.getContent().stream()
                 .map(review -> {
                     String userName = review.getUser() != null ? review.getUser().getFullName() : "Unknown User";
                     String courseTitle = review.getCourse() != null ? review.getCourse().getTitle() : "Unknown Course";
                     return mapToResponse(review, userName, courseTitle);
                 })
                 .collect(Collectors.toList());
+
+        return PageResponse.<ReviewResponse>builder()
+                .content(content)
+                .pageNumber(reviewPage.getNumber())
+                .pageSize(reviewPage.getSize())
+                .totalElements(reviewPage.getTotalElements())
+                .totalPages(reviewPage.getTotalPages())
+                .last(reviewPage.isLast())
+                .build();
     }
 
     @Transactional

@@ -2,9 +2,11 @@ package course.controller;
 
 import course.dto.CourseRequest;
 import course.dto.CourseResponse;
+import course.dto.PageResponse;
 import course.service.CourseService;
 import course.util.ApiResponse;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -59,25 +61,28 @@ public class CourseController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<CourseResponse>>> getAllCourses(
-            @RequestParam(required = false) Boolean published) {
-        List<CourseResponse> courses = published != null && published
-                ? courseService.getPublishedCourses()
-                : courseService.getAllCourses();
+    public ResponseEntity<ApiResponse<PageResponse<CourseResponse>>> getAllCourses(
+            @RequestParam(required = false) Boolean published,
+            Pageable pageable) {
+        PageResponse<CourseResponse> courses = published != null && published
+                ? courseService.getPublishedCourses(pageable)
+                : courseService.getAllCourses(pageable);
         return ResponseEntity.ok(ApiResponse.success(courses));
     }
 
     @GetMapping("/search")
-    public ResponseEntity<ApiResponse<List<CourseResponse>>> searchCourses(
-            @RequestParam String keyword) {
-        List<CourseResponse> courses = courseService.searchCourses(keyword);
+    public ResponseEntity<ApiResponse<PageResponse<CourseResponse>>> searchCourses(
+            @RequestParam String keyword,
+            Pageable pageable) {
+        PageResponse<CourseResponse> courses = courseService.searchCourses(keyword, pageable);
         return ResponseEntity.ok(ApiResponse.success(courses));
     }
 
     @GetMapping("/filter")
-    public ResponseEntity<ApiResponse<List<CourseResponse>>> filterCourses(
-            @RequestParam(required = false) String category) {
-        List<CourseResponse> courses = courseService.filterCourses(category);
+    public ResponseEntity<ApiResponse<PageResponse<CourseResponse>>> filterCourses(
+            @RequestParam(required = false) String category,
+            Pageable pageable) {
+        PageResponse<CourseResponse> courses = courseService.filterCourses(category, pageable);
         return ResponseEntity.ok(ApiResponse.success(courses));
     }
 

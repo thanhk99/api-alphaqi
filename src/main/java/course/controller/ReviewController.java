@@ -1,17 +1,18 @@
 package course.controller;
 
+import course.dto.PageResponse;
 import course.dto.ReviewRequest;
 import course.dto.ReviewResponse;
 import course.service.ReviewService;
 import course.util.ApiResponse;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 
 @RestController
 @RequestMapping("/reviews")
@@ -47,8 +48,10 @@ public class ReviewController {
     }
 
     @GetMapping("/course/{courseId}")
-    public ResponseEntity<ApiResponse<List<ReviewResponse>>> getCourseReviews(@PathVariable String courseId) {
-        List<ReviewResponse> response = reviewService.getReviewsByCourse(courseId);
+    public ResponseEntity<ApiResponse<PageResponse<ReviewResponse>>> getCourseReviews(
+            @PathVariable String courseId,
+            Pageable pageable) {
+        PageResponse<ReviewResponse> response = reviewService.getReviewsByCourse(courseId, pageable);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -74,8 +77,8 @@ public class ReviewController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<ReviewResponse>>> getAllReviews() {
-        List<ReviewResponse> response = reviewService.getAllReviews();
+    public ResponseEntity<ApiResponse<PageResponse<ReviewResponse>>> getAllReviews(Pageable pageable) {
+        PageResponse<ReviewResponse> response = reviewService.getAllReviews(pageable);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

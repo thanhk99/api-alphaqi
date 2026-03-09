@@ -2,11 +2,14 @@ package course.service;
 
 import course.dto.NewsRequest;
 import course.dto.NewsResponse;
+import course.dto.PageResponse;
 import course.dto.UploadResponse;
+import course.exception.BadRequestException;
 import course.util.HtmlSanitizer;
 import course.exception.ResourceNotFoundException;
 import course.model.News;
 import course.repository.NewsRepository;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -53,6 +56,9 @@ public class NewsService {
 
     @Transactional
     public NewsResponse updateNews(String id, NewsRequest request, MultipartFile thumbnail) {
+        if (id == null) {
+            throw new BadRequestException("News ID must not be null");
+        }
         News news = newsRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("News", "id", id));
 
@@ -72,19 +78,19 @@ public class NewsService {
 
     @Transactional
     public void deleteNews(String id) {
-        if (!newsRepository.existsById(id)) {
+        if (!newsRepository.existsById(id != null ? id : "")) {
             throw new ResourceNotFoundException("News", "id", id);
         }
-        newsRepository.deleteById(id);
+        newsRepository.deleteById(id != null ? id : "");
     }
 
     public NewsResponse getNewsById(String id) {
-        News news = newsRepository.findById(id)
+        News news = newsRepository.findById(id != null ? id : "")
                 .orElseThrow(() -> new ResourceNotFoundException("News", "id", id));
         return mapToResponse(news);
     }
 
-    public List<NewsResponse> getAllNews() {
+    public PageResponse<NewsResponse> getAllNews(Pageable pageable) {
         List<NewsResponse> newsList = newsRepository.findAll().stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
@@ -93,23 +99,65 @@ public class NewsService {
                 .map(this::mapArticleToResponse)
                 .collect(Collectors.toList());
 
-        return Stream.concat(newsList.stream(), articleList.stream())
+        List<NewsResponse> combined = Stream.concat(newsList.stream(), articleList.stream())
                 .sorted(Comparator.comparing(NewsResponse::getCreatedAt).reversed())
                 .collect(Collectors.toList());
+
+        return getPageResponse(combined, pageable);
     }
 
-    public List<NewsResponse> getPublishedNews() {
-        List<NewsResponse> newsList = newsRepository.findByIsPublished(true).stream()
+    public PageResponse<NewsResponse> getPublishedNews(Pageable pageable) {
+        List<NewsResponse> newsList = newsRepository.findByIsPublished(true, Pageable.unpaged()).getContent().stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
 
-        List<NewsResponse> articleList = articleRepository.findByIsPublished(true).stream()
+        List<NewsResponse> articleList = articleRepository.findByIsPublished(true, Pageable.unpaged()).getContent()
+                .stream()
                 .map(this::mapArticleToResponse)
                 .collect(Collectors.toList());
 
-        return Stream.concat(newsList.stream(), articleList.stream())
+        List<NewsResponse> combined = Stream.concat(newsList.stream(), articleList.stream())
                 .sorted(Comparator.comparing(NewsResponse::getCreatedAt).reversed())
                 .collect(Collectors.toList());
+
+        return getPageResponse(combined, pageable);
+    }
+
+    public PageResponse<NewsResponse> searchNews(String keyword, Pageable pageable) {
+        List<NewsResponse> newsList = newsRepository.findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
+                keyword, keyword, Pageable.unpaged()).getContent().stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+
+        List<NewsResponse> articleList = articleRepository.findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
+                keyword, keyword, Pageable.unpaged()).getContent().stream()
+                .map(this::mapArticleToResponse)
+                .collect(Collectors.toList());
+
+        List<NewsResponse> combined = Stream.concat(newsList.stream(), articleList.stream())
+                .sorted(Comparator.comparing(NewsResponse::getCreatedAt).reversed())
+                .collect(Collectors.toList());
+
+        return getPageResponse(combined, pageable);
+    }
+
+    private PageResponse<NewsResponse> getPageResponse(List<NewsResponse> list, Pageable pageable) {
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), list.size());
+
+        List<NewsResponse> content = new ArrayList<>();
+        if (start < list.size()) {
+            content = list.subList(start, end);
+        }
+
+        return PageResponse.<NewsResponse>builder()
+                .content(content)
+                .pageNumber(pageable.getPageNumber())
+                .pageSize(pageable.getPageSize())
+                .totalElements(list.size())
+                .totalPages((int) Math.ceil((double) list.size() / pageable.getPageSize()))
+                .last(end == list.size())
+                .build();
     }
 
     public List<NewsResponse> getFeaturedNews() {

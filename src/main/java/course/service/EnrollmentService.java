@@ -4,6 +4,7 @@ import course.dto.AdminEnrollmentResponse;
 import course.dto.EnrollmentRequest;
 import course.dto.EnrollmentResponse;
 import course.dto.EnrollmentStatisticsResponse;
+import course.dto.PageResponse;
 
 import course.exception.BadRequestException;
 import course.exception.ResourceNotFoundException;
@@ -18,11 +19,14 @@ import course.model.Enrollment;
 import course.model.User;
 import course.model.enums.EnrollmentStatus;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class EnrollmentService {
@@ -68,12 +72,21 @@ public class EnrollmentService {
         return enrollmentRepository.save(enrollment);
     }
 
-    public List<EnrollmentResponse> getMyEnrollments(String userId) {
-        List<Enrollment> enrollments = enrollmentRepository.findByUserIdWithCourse(userId);
+    public PageResponse<EnrollmentResponse> getMyEnrollments(String userId, Pageable pageable) {
+        Page<Enrollment> enrollments = enrollmentRepository.findByUserIdWithCourse(userId, pageable);
 
-        return enrollments.stream()
+        List<EnrollmentResponse> content = enrollments.getContent().stream()
                 .map(this::mapToEnrollmentResponse)
-                .toList();
+                .collect(Collectors.toList());
+
+        return PageResponse.<EnrollmentResponse>builder()
+                .content(content)
+                .pageNumber(enrollments.getNumber())
+                .pageSize(enrollments.getSize())
+                .totalElements(enrollments.getTotalElements())
+                .totalPages(enrollments.getTotalPages())
+                .last(enrollments.isLast())
+                .build();
     }
 
     public boolean checkEnrollment(String userId, String courseId) {
@@ -136,25 +149,40 @@ public class EnrollmentService {
     }
 
     // Admin methods
-    public List<AdminEnrollmentResponse> getAllEnrollmentsForAdmin() {
-        List<Enrollment> enrollments = enrollmentRepository.findAllWithCourseAndUser();
-        return enrollments.stream()
-                .map(this::mapToAdminEnrollmentResponse)
-                .toList();
+    public PageResponse<AdminEnrollmentResponse> getAllEnrollmentsForAdmin(Pageable pageable) {
+        Page<Enrollment> enrollments = enrollmentRepository.findAllWithCourseAndUser(pageable);
+        return mapToAdminPageResponse(enrollments);
     }
 
-    public List<AdminEnrollmentResponse> getEnrollmentsByCourseForAdmin(String courseId) {
-        List<Enrollment> enrollments = enrollmentRepository.findByCourseIdWithCourseAndUser(courseId);
-        return enrollments.stream()
-                .map(this::mapToAdminEnrollmentResponse)
-                .toList();
+    public PageResponse<AdminEnrollmentResponse> getEnrollmentsByCourseForAdmin(String courseId, Pageable pageable) {
+        Page<Enrollment> enrollments = enrollmentRepository.findByCourseIdWithCourseAndUser(courseId, pageable);
+        return mapToAdminPageResponse(enrollments);
     }
 
-    public List<AdminEnrollmentResponse> getEnrollmentsByStatusForAdmin(EnrollmentStatus status) {
-        List<Enrollment> enrollments = enrollmentRepository.findByStatusWithCourseAndUser(status);
-        return enrollments.stream()
+    public PageResponse<AdminEnrollmentResponse> getEnrollmentsByStatusForAdmin(EnrollmentStatus status,
+            Pageable pageable) {
+        Page<Enrollment> enrollments = enrollmentRepository.findByStatusWithCourseAndUser(status, pageable);
+        return mapToAdminPageResponse(enrollments);
+    }
+
+    public PageResponse<AdminEnrollmentResponse> searchEnrollmentsForAdmin(String keyword, Pageable pageable) {
+        Page<Enrollment> enrollments = enrollmentRepository.searchEnrollments(keyword, pageable);
+        return mapToAdminPageResponse(enrollments);
+    }
+
+    private PageResponse<AdminEnrollmentResponse> mapToAdminPageResponse(Page<Enrollment> enrollments) {
+        List<AdminEnrollmentResponse> content = enrollments.getContent().stream()
                 .map(this::mapToAdminEnrollmentResponse)
-                .toList();
+                .collect(Collectors.toList());
+
+        return PageResponse.<AdminEnrollmentResponse>builder()
+                .content(content)
+                .pageNumber(enrollments.getNumber())
+                .pageSize(enrollments.getSize())
+                .totalElements(enrollments.getTotalElements())
+                .totalPages(enrollments.getTotalPages())
+                .last(enrollments.isLast())
+                .build();
     }
 
     public EnrollmentStatisticsResponse getEnrollmentStatistics() {

@@ -2,9 +2,11 @@ package course.controller;
 
 import course.dto.NewsRequest;
 import course.dto.NewsResponse;
+import course.dto.PageResponse;
 import course.service.NewsService;
 import course.util.ApiResponse;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -56,12 +58,21 @@ public class NewsController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<PageResponse<NewsResponse>>> searchNews(
+            @RequestParam String keyword,
+            Pageable pageable) {
+        PageResponse<NewsResponse> newsList = newsService.searchNews(keyword, pageable);
+        return ResponseEntity.ok(ApiResponse.success(newsList));
+    }
+
     @GetMapping
-    public ResponseEntity<ApiResponse<List<NewsResponse>>> getAllNews(
-            @RequestParam(required = false) Boolean published) {
-        List<NewsResponse> newsList = published != null && published
-                ? newsService.getPublishedNews()
-                : newsService.getAllNews();
+    public ResponseEntity<ApiResponse<PageResponse<NewsResponse>>> getAllNews(
+            @RequestParam(required = false) Boolean published,
+            Pageable pageable) {
+        PageResponse<NewsResponse> newsList = published != null && published
+                ? newsService.getPublishedNews(pageable)
+                : newsService.getAllNews(pageable);
         return ResponseEntity.ok(ApiResponse.success(newsList));
     }
 

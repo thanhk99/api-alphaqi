@@ -2,6 +2,7 @@ package course.service;
 
 import course.dto.ArticleRequest;
 import course.dto.ArticleResponse;
+import course.dto.PageResponse;
 import course.dto.UploadResponse;
 import course.util.HtmlSanitizer;
 import course.exception.BadRequestException;
@@ -9,6 +10,8 @@ import course.exception.ResourceNotFoundException;
 import course.model.Article;
 import course.model.enums.ArticleType;
 import course.repository.ArticleRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -78,16 +81,34 @@ public class ArticleService {
         return mapToResponse(article);
     }
 
-    public List<ArticleResponse> getAllArticles() {
-        return articleRepository.findAll().stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+    public PageResponse<ArticleResponse> getAllArticles(Pageable pageable) {
+        Page<Article> articlePage = articleRepository.findAll(pageable != null ? pageable : Pageable.unpaged());
+        return mapToPageResponse(articlePage);
     }
 
-    public List<ArticleResponse> getPublishedArticles() {
-        return articleRepository.findByIsPublished(true).stream()
+    public PageResponse<ArticleResponse> getPublishedArticles(Pageable pageable) {
+        Page<Article> articlePage = articleRepository.findByIsPublished(true, pageable != null ? pageable : Pageable.unpaged());
+        return mapToPageResponse(articlePage);
+    }
+
+    public PageResponse<ArticleResponse> searchArticles(String keyword, Pageable pageable) {
+        Page<Article> articlePage = articleRepository.findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
+                keyword, keyword, pageable != null ? pageable : Pageable.unpaged());
+        return mapToPageResponse(articlePage);
+    }
+
+    private PageResponse<ArticleResponse> mapToPageResponse(Page<Article> articlePage) {
+        List<ArticleResponse> content = articlePage.getContent().stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
+        return PageResponse.<ArticleResponse>builder()
+                .content(content)
+                .pageNumber(articlePage.getNumber())
+                .pageSize(articlePage.getSize())
+                .totalElements(articlePage.getTotalElements())
+                .totalPages(articlePage.getTotalPages())
+                .last(articlePage.isLast())
+                .build();
     }
 
     private void updateArticleFromRequest(Article article, ArticleRequest request) {

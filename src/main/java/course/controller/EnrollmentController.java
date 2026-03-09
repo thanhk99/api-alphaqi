@@ -5,19 +5,20 @@ import course.dto.EnrollmentCheckResponse;
 import course.dto.EnrollmentRequest;
 import course.dto.EnrollmentResponse;
 import course.dto.EnrollmentStatisticsResponse;
+import course.dto.PageResponse;
 import course.dto.UpdateEnrollmentStatusRequest;
 import course.model.Enrollment;
 import course.model.enums.EnrollmentStatus;
 import course.service.EnrollmentService;
 import course.util.ApiResponse;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 
 import course.security.CustomUserDetails;
 
@@ -46,10 +47,12 @@ public class EnrollmentController {
 
     @GetMapping("/my")
     @PreAuthorize("hasAuthority('ROLE_USER')")
-    public ResponseEntity<ApiResponse<List<EnrollmentResponse>>> getMyEnrollments(Authentication authentication) {
+    public ResponseEntity<ApiResponse<PageResponse<EnrollmentResponse>>> getMyEnrollments(
+            Authentication authentication,
+            Pageable pageable) {
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
         String userId = userDetails.getId();
-        List<EnrollmentResponse> enrollments = enrollmentService.getMyEnrollments(userId);
+        PageResponse<EnrollmentResponse> enrollments = enrollmentService.getMyEnrollments(userId, pageable);
         return ResponseEntity.ok(ApiResponse.success(enrollments));
     }
 
@@ -84,24 +87,37 @@ public class EnrollmentController {
     // Admin endpoints
     @GetMapping("/admin/all")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-    public ResponseEntity<ApiResponse<List<AdminEnrollmentResponse>>> getAllEnrollments() {
-        List<AdminEnrollmentResponse> enrollments = enrollmentService.getAllEnrollmentsForAdmin();
+    public ResponseEntity<ApiResponse<PageResponse<AdminEnrollmentResponse>>> getAllEnrollments(Pageable pageable) {
+        PageResponse<AdminEnrollmentResponse> enrollments = enrollmentService.getAllEnrollmentsForAdmin(pageable);
         return ResponseEntity.ok(ApiResponse.success(enrollments));
     }
 
     @GetMapping("/admin/course/{courseId}")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-    public ResponseEntity<ApiResponse<List<AdminEnrollmentResponse>>> getEnrollmentsByCourse(
-            @PathVariable String courseId) {
-        List<AdminEnrollmentResponse> enrollments = enrollmentService.getEnrollmentsByCourseForAdmin(courseId);
+    public ResponseEntity<ApiResponse<PageResponse<AdminEnrollmentResponse>>> getEnrollmentsByCourse(
+            @PathVariable String courseId,
+            Pageable pageable) {
+        PageResponse<AdminEnrollmentResponse> enrollments = enrollmentService.getEnrollmentsByCourseForAdmin(courseId,
+                pageable);
         return ResponseEntity.ok(ApiResponse.success(enrollments));
     }
 
     @GetMapping("/admin/status/{status}")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-    public ResponseEntity<ApiResponse<List<AdminEnrollmentResponse>>> getEnrollmentsByStatus(
-            @PathVariable EnrollmentStatus status) {
-        List<AdminEnrollmentResponse> enrollments = enrollmentService.getEnrollmentsByStatusForAdmin(status);
+    public ResponseEntity<ApiResponse<PageResponse<AdminEnrollmentResponse>>> getEnrollmentsByStatus(
+            @PathVariable EnrollmentStatus status,
+            Pageable pageable) {
+        PageResponse<AdminEnrollmentResponse> enrollments = enrollmentService.getEnrollmentsByStatusForAdmin(status,
+                pageable);
+        return ResponseEntity.ok(ApiResponse.success(enrollments));
+    }
+
+    @GetMapping("/admin/search")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public ResponseEntity<ApiResponse<PageResponse<AdminEnrollmentResponse>>> searchEnrollments(
+            @RequestParam String keyword,
+            Pageable pageable) {
+        PageResponse<AdminEnrollmentResponse> enrollments = enrollmentService.searchEnrollmentsForAdmin(keyword, pageable);
         return ResponseEntity.ok(ApiResponse.success(enrollments));
     }
 

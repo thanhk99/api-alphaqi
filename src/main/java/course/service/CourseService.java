@@ -3,6 +3,7 @@ package course.service;
 import course.dto.CourseRequest;
 import course.dto.CourseResponse;
 import course.dto.LessonResponse;
+import course.dto.PageResponse;
 import course.dto.UploadResponse;
 import course.util.HtmlSanitizer;
 import course.exception.BadRequestException;
@@ -15,6 +16,8 @@ import course.repository.LessonRepository;
 import course.repository.CategoryRepository;
 import course.model.Category;
 import course.model.Enrollment;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -158,28 +161,29 @@ public class CourseService {
         return mapToResponse(course);
     }
 
-    public List<CourseResponse> getAllCourses() {
-        return mapToResponseList(courseRepository.findAll());
+    public PageResponse<CourseResponse> getAllCourses(Pageable pageable) {
+        Page<Course> coursePage = courseRepository.findAll(pageable != null ? pageable : Pageable.unpaged());
+        return mapToPageResponse(coursePage);
     }
 
-    public List<CourseResponse> getPublishedCourses() {
-        return mapToResponseList(courseRepository.findByIsPublished(true));
+    public PageResponse<CourseResponse> getPublishedCourses(Pageable pageable) {
+        Page<Course> coursePage = courseRepository.findByIsPublished(true, pageable != null ? pageable : Pageable.unpaged());
+        return mapToPageResponse(coursePage);
     }
 
-    public List<CourseResponse> searchCourses(String keyword) {
-        return mapToResponseList(courseRepository.searchPublishedCourses(keyword));
+    public PageResponse<CourseResponse> searchCourses(String keyword, Pageable pageable) {
+        Page<Course> coursePage = courseRepository.searchPublishedCourses(keyword, pageable);
+        return mapToPageResponse(coursePage);
     }
 
-    public List<CourseResponse> filterCourses(String category) {
-        List<Course> courses;
-
+    public PageResponse<CourseResponse> filterCourses(String category, Pageable pageable) {
+        Page<Course> coursePage;
         if (category != null && !category.isEmpty()) {
-            courses = courseRepository.findByCategory(category);
+            coursePage = courseRepository.findByCategory(category, pageable);
         } else {
-            courses = courseRepository.findByIsPublished(true);
+            coursePage = courseRepository.findByIsPublished(true, pageable);
         }
-
-        return mapToResponseList(courses);
+        return mapToPageResponse(coursePage);
     }
 
     public List<CourseResponse> getHomeCourses() {
@@ -215,6 +219,18 @@ public class CourseService {
         return courses.stream()
                 .map(course -> mapToResponse(course, enrolledCourseIds))
                 .collect(Collectors.toList());
+    }
+
+    private PageResponse<CourseResponse> mapToPageResponse(Page<Course> coursePage) {
+        List<CourseResponse> content = mapToResponseList(coursePage.getContent());
+        return PageResponse.<CourseResponse>builder()
+                .content(content)
+                .pageNumber(coursePage.getNumber())
+                .pageSize(coursePage.getSize())
+                .totalElements(coursePage.getTotalElements())
+                .totalPages(coursePage.getTotalPages())
+                .last(coursePage.isLast())
+                .build();
     }
 
     private CourseResponse mapToResponse(Course course) {
