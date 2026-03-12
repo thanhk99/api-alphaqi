@@ -10,7 +10,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     private final RateLimitInterceptor rateLimitInterceptor;
 
-    public WebMvcConfig(RateLimitInterceptor rateLimitInterceptor) {
+    public WebMvcConfig(@org.springframework.context.annotation.Lazy RateLimitInterceptor rateLimitInterceptor) {
         this.rateLimitInterceptor = rateLimitInterceptor;
     }
 

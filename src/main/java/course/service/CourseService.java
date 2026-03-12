@@ -60,7 +60,6 @@ public class CourseService {
         course.setDescription(HtmlSanitizer.sanitize(request.getDescription()));
         course.setPrice(request.getPrice());
         course.setCategory(request.getCategory());
-        course.setCategory(request.getCategory());
 
         // Upload thumbnail if provided
         if (thumbnail != null && !thumbnail.isEmpty()) {
@@ -172,7 +171,7 @@ public class CourseService {
     }
 
     public PageResponse<CourseResponse> searchCourses(String keyword, Pageable pageable) {
-        Page<Course> coursePage = courseRepository.searchPublishedCourses(keyword, pageable);
+        Page<Course> coursePage = courseRepository.searchCourses(keyword, pageable);
         return mapToPageResponse(coursePage);
     }
 
@@ -253,7 +252,7 @@ public class CourseService {
                 .introVideoUrl(course.getIntroVideoUrl())
                 .category(course.getCategory())
                 .categoryName(course.getCategory() != null
-                        ? categoryRepository.findByCode(course.getCategory()).map(Category::getName).orElse(null)
+                        ? categoryRepository.findById(course.getCategory()).map(Category::getName).orElse(null)
                         : null)
                 .isPublished(course.getIsPublished())
                 .isShowHome(course.getIsShowHome())
