@@ -7,6 +7,8 @@ import course.service.NewsService;
 import course.util.ApiResponse;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -61,7 +63,7 @@ public class NewsController {
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<PageResponse<NewsResponse>>> searchNews(
             @RequestParam String keyword,
-            Pageable pageable) {
+            @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         PageResponse<NewsResponse> newsList = newsService.searchNews(keyword, pageable);
         return ResponseEntity.ok(ApiResponse.success(newsList));
     }
@@ -69,7 +71,7 @@ public class NewsController {
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<NewsResponse>>> getAllNews(
             @RequestParam(required = false) Boolean published,
-            Pageable pageable) {
+            @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         PageResponse<NewsResponse> newsList = published != null && published
                 ? newsService.getPublishedNews(pageable)
                 : newsService.getAllNews(pageable);

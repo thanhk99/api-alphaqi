@@ -19,6 +19,10 @@ public class NewsRequest {
 
     private String thumbnailUrl;
 
+    private String link;
+
+    private String type;
+
     private Boolean isPublished = false;
 
     private Boolean isShowHome = false;

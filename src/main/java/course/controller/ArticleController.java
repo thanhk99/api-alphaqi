@@ -7,6 +7,8 @@ import course.service.ArticleService;
 import course.util.ApiResponse;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -60,7 +62,7 @@ public class ArticleController {
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<PageResponse<ArticleResponse>>> searchArticles(
             @RequestParam String keyword,
-            Pageable pageable) {
+            @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         PageResponse<ArticleResponse> articles = articleService.searchArticles(keyword, pageable);
         return ResponseEntity.ok(ApiResponse.success(articles));
     }
@@ -68,7 +70,7 @@ public class ArticleController {
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<ArticleResponse>>> getAllArticles(
             @RequestParam(required = false) Boolean published,
-            Pageable pageable) {
+            @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         PageResponse<ArticleResponse> articles;
         if (published != null && published) {
             articles = articleService.getPublishedArticles(pageable);
