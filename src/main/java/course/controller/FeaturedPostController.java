@@ -1,6 +1,5 @@
 package course.controller;
 
-import course.dto.FeaturedPostRequest;
 import course.dto.FeaturedPostResponse;
 import course.dto.PageResponse;
 import course.service.FeaturedPostService;
@@ -11,10 +10,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import course.dto.FeaturedPostRequest;
 
 import java.util.List;
 
@@ -71,5 +73,18 @@ public class FeaturedPostController {
     public ResponseEntity<ApiResponse<List<FeaturedPostResponse>>> getActiveFeaturedPosts() {
         List<FeaturedPostResponse> posts = featuredPostService.getActiveFeaturedPosts();
         return ResponseEntity.ok(ApiResponse.success(posts));
+    }
+
+    /**
+     * Proxy endpoint: fetch HTML từ Cloudinary và trả về đúng Content-Type: text/html.
+     * Frontend dùng <iframe src="/api/featured-posts/{id}/content"> để render đúng.
+     * HTML không lưu DB — vẫn giữ trên Cloudinary.
+     */
+    @GetMapping(value = "/{id}/content", produces = MediaType.TEXT_HTML_VALUE)
+    public ResponseEntity<String> getFeaturedPostHtmlContent(@PathVariable String id) {
+        String htmlContent = featuredPostService.fetchHtmlContent(id);
+        return ResponseEntity.ok()
+                .contentType(MediaType.TEXT_HTML)
+                .body(htmlContent);
     }
 }

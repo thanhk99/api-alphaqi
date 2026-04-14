@@ -8,19 +8,28 @@ import course.exception.BadRequestException;
 import course.exception.ResourceNotFoundException;
 import course.model.FeaturedPost;
 import course.repository.FeaturedPostRepository;
+import course.util.HtmlFileExtractor;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Slf4j
 public class FeaturedPostService {
 
     private final FeaturedPostRepository featuredPostRepository;
@@ -96,6 +105,77 @@ public class FeaturedPostService {
         return featuredPostRepository.findTop10ByIsPublishedTrueOrderByCreatedAtDesc().stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Fetch nội dung HTML từ Cloudinary URL, trả về string.
+     * Controller dùng để serve đúng Content-Type: text/html.
+     */
+    public String fetchHtmlContent(String id) {
+        FeaturedPost post = featuredPostRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("FeaturedPost", "id", id));
+
+        String htmlUrl = post.getHtmlUrl();
+        log.info("[FeaturedPost] Fetch HTML content, id={}, htmlUrl={}", id, htmlUrl);
+
+        if (htmlUrl == null || htmlUrl.isBlank()) {
+            throw new BadRequestException("Bài viết này không có file HTML đính kèm");
+        }
+
+        String rawHtml = fetchFromUrl(htmlUrl);
+        // Trích xuất thành dạng embeddable (bỏ html/head/body)
+        return HtmlFileExtractor.extractEmbeddableFromString(rawHtml);
+    }
+
+    /**
+     * Fetch nội dung từ URL bên ngoài (Cloudinary).
+     */
+    @SuppressWarnings("deprecation")
+    private String fetchFromUrl(String targetUrl) {
+        try {
+            // Dùng new URL() trực tiếp - tương thích tốt hơn với URL Cloudinary
+            URL url = new URL(targetUrl);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setInstanceFollowRedirects(true); // Tự theo redirect
+            conn.setRequestMethod("GET");
+            conn.setConnectTimeout(10000); // 10s
+            conn.setReadTimeout(15000);    // 15s
+            conn.setRequestProperty("Accept", "text/html,application/xhtml+xml,*/*");
+            conn.setRequestProperty("User-Agent",
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
+
+            int status = conn.getResponseCode();
+            log.info("[FeaturedPost] HTTP {} khi fetch: {}", status, targetUrl);
+
+            if (status != HttpURLConnection.HTTP_OK) {
+                log.error("[FeaturedPost] Lỗi HTTP {} khi fetch URL: {}", status, targetUrl);
+                throw new BadRequestException("Không thể tải file từ Cloudinary (HTTP " + status + ")");
+            }
+
+            // Đọc encoding từ header, fallback UTF-8
+            String contentType = conn.getContentType();
+            String charset = "UTF-8";
+            if (contentType != null && contentType.contains("charset=")) {
+                charset = contentType.substring(contentType.indexOf("charset=") + 8).trim();
+            }
+
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(conn.getInputStream(), charset))) {
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    sb.append(line).append("\n");
+                }
+                String content = sb.toString();
+                log.info("[FeaturedPost] Fetch thành công, {} bytes", content.length());
+                return content;
+            }
+        } catch (BadRequestException e) {
+            throw e; // Re-throw, không bọc lại
+        } catch (Exception e) {
+            log.error("[FeaturedPost] Lỗi fetch HTML từ: {}, error: {}", targetUrl, e.getMessage(), e);
+            throw new BadRequestException("Lỗi khi tải nội dung bài viết: " + e.getMessage());
+        }
     }
 
     private void updatePostFromRequest(FeaturedPost post, FeaturedPostRequest request) {
