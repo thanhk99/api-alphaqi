@@ -10,18 +10,30 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Checkout source
       - name: Checkout source
         uses: actions/checkout@v4
 
+      # 2. Setup Java
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 21
 
-      - name: Build jar
-        run: mvn clean package -DskipTests
+      # 3. Cache Maven (tăng tốc build)
+      - name: Cache Maven
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2
+          key: maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: maven-
 
+      # 4. Build jar
+      - name: Build jar
+        run: mvn -B clean package -DskipTests
+
+      # 5. Upload jar lên VPS
       - name: Upload jar to VPS
         uses: appleboy/scp-action@v1
         with:
@@ -32,13 +44,38 @@ jobs:
           target: "/opt/backend"
           strip_components: 1
 
-      - name: Rename jar
+      # 6. Deploy + restart service
+      - name: Deploy and Restart
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SERVER_IP }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            mv /opt/backend/*.jar /opt/backend/app.jar
-            chown springboot:springboot /opt/backend/app.jar
-            systemctl restart backend
+            set -e
+
+            cd /opt/backend
+
+            echo "===== LIST FILE BEFORE ====="
+            ls -lh
+
+            echo "===== CREATE VERSIONED FILE ====="
+            NEW_FILE=app-$(date +%s).jar
+            mv api-0.0.1-SNAPSHOT.jar $NEW_FILE
+
+            echo "===== UPDATE SYMLINK ====="
+            ln -sfn $NEW_FILE current.jar
+
+            echo "===== FIX PERMISSION ====="
+            sudo chown -h springboot:springboot current.jar
+            sudo chown springboot:springboot $NEW_FILE
+
+            echo "===== RESTART SERVICE ====="
+            sudo systemctl daemon-reload
+            sudo systemctl restart backend
+
+            echo "===== VERIFY PROCESS ====="
+            ps -ef | grep java | grep -v grep
+
+            echo "===== VERIFY SERVICE ====="
+            sudo systemctl status backend --no-pager

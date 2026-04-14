@@ -6,7 +6,6 @@ import course.dto.LessonResponse;
 import course.dto.PageResponse;
 import course.dto.UploadResponse;
 import course.util.HtmlSanitizer;
-import course.exception.BadRequestException;
 import course.exception.ResourceNotFoundException;
 import course.model.Course;
 
@@ -79,13 +78,8 @@ public class CourseService {
 
         course.setIsPublished(request.getIsPublished());
 
-        // Handle isShowHome with validation
-        if (request.getIsShowHome() != null && request.getIsShowHome()) {
-            validateIsShowHomeLimit();
-            course.setIsShowHome(true);
-        } else {
-            course.setIsShowHome(false);
-        }
+        // Handle isShowHome
+        course.setIsShowHome(request.getIsShowHome() != null && request.getIsShowHome());
 
         if (request.getLessonIds() != null && !request.getLessonIds().isEmpty()) {
             List<course.model.Lesson> lessons = lessonRepository.findAllById(request.getLessonIds());
@@ -125,15 +119,9 @@ public class CourseService {
 
         course.setIsPublished(request.getIsPublished());
 
-        // Handle isShowHome with validation
-        if (request.getIsShowHome() != null && request.getIsShowHome()) {
-            // Only validate if it wasn't already true
-            if (!Boolean.TRUE.equals(course.getIsShowHome())) {
-                validateIsShowHomeLimit();
-            }
-            course.setIsShowHome(true);
-        } else {
-            course.setIsShowHome(false);
+        // Handle isShowHome
+        if (request.getIsShowHome() != null) {
+            course.setIsShowHome(request.getIsShowHome());
         }
 
         if (request.getLessonIds() != null) {
@@ -166,7 +154,8 @@ public class CourseService {
     }
 
     public PageResponse<CourseResponse> getPublishedCourses(Pageable pageable) {
-        Page<Course> coursePage = courseRepository.findByIsPublished(true, pageable != null ? pageable : Pageable.unpaged());
+        Page<Course> coursePage = courseRepository.findByIsPublished(true,
+                pageable != null ? pageable : Pageable.unpaged());
         return mapToPageResponse(coursePage);
     }
 
@@ -186,13 +175,7 @@ public class CourseService {
     }
 
     public List<CourseResponse> getHomeCourses() {
-        return mapToResponseList(courseRepository.findTop3ByIsShowHomeTrueOrderByUpdatedAtDesc());
-    }
-
-    private void validateIsShowHomeLimit() {
-        if (courseRepository.countByIsShowHomeTrue() >= 3) {
-            throw new BadRequestException("Only 3 courses can be shown on home page");
-        }
+        return mapToResponseList(courseRepository.findTop3ByIsPublishedTrueOrderByCreatedAtDesc());
     }
 
     private String getCurrentUserId() {

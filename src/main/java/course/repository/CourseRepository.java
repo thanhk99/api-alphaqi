@@ -28,6 +28,8 @@ public interface CourseRepository extends JpaRepository<Course, String> {
                         "LOWER(c.description) LIKE LOWER(CONCAT('%', :keyword, '%')))")
         Page<Course> searchPublishedCourses(@Param("keyword") String keyword, Pageable pageable);
 
+        List<Course> findTop3ByIsPublishedTrueOrderByCreatedAtDesc();
+
         List<Course> findTop3ByIsShowHomeTrueOrderByUpdatedAtDesc();
 
         long countByIsShowHomeTrue();
