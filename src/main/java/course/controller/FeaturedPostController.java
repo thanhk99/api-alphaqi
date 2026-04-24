@@ -75,6 +75,13 @@ public class FeaturedPostController {
         return ResponseEntity.ok(ApiResponse.success(posts));
     }
 
+    @GetMapping("/published")
+    public ResponseEntity<ApiResponse<PageResponse<FeaturedPostResponse>>> getPublishedFeaturedPosts(
+            @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        PageResponse<FeaturedPostResponse> posts = featuredPostService.getPublishedFeaturedPosts(pageable);
+        return ResponseEntity.ok(ApiResponse.success(posts));
+    }
+
     /**
      * Proxy endpoint: fetch HTML từ Cloudinary và trả về đúng Content-Type: text/html.
      * Frontend dùng <iframe src="/api/featured-posts/{id}/content"> để render đúng.

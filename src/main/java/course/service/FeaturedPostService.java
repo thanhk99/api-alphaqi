@@ -107,6 +107,11 @@ public class FeaturedPostService {
                 .collect(Collectors.toList());
     }
 
+    public PageResponse<FeaturedPostResponse> getPublishedFeaturedPosts(Pageable pageable) {
+        Page<FeaturedPost> pageResult = featuredPostRepository.findByIsPublishedTrueOrderByCreatedAtDesc(pageable);
+        return mapToPageResponse(pageResult);
+    }
+
     /**
      * Fetch nội dung HTML từ Cloudinary URL, trả về string.
      * Controller dùng để serve đúng Content-Type: text/html.
